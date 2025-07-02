@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pace Production Summary</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .widget {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .widget:hover {
+            transform: translateY(-5px);
+        }
+        
+        .widget-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: -20px -20px 20px -20px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .production-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .total { background: #2196F3; }
+        .progress { background: #FF9800; }
+        .completed { background: #4CAF50; }
+        .not-started { background: #607D8B; }
+        
+        .stat-info h3 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .stat-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .delay-reasons {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .delay-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .delay-item.rework { border-left-color: #2196F3; }
+        .delay-item.labor { border-left-color: #9C27B0; }
+        .delay-item.parts { border-left-color: #FFC107; }
+        
+        .delay-info {
+            flex: 1;
+        }
+        
+        .delay-count {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        .payment-summary {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .payment-total {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-radius: 15px;
+        }
+        
+        .payment-amount {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">🏭 Pace Production Summary Dashboard</h1>
+    
+    <div class="dashboard">
+        <!-- Production Snapshot -->
+        <div class="widget">
+            <div class="widget-header">
+                📊 Production Snapshot
+            </div>
+            <div class="production-stats">
+                <div>
+                    <div class="stat-item">
+                        <div class="stat-icon total">22</div>
+                        <div class="stat-info">
+                            <h3>Total Buses</h3>
+                            <p>Overall production count</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon progress">1</div>
+                        <div class="stat-info">
+                            <h3>In Progress</h3>
+                            <p>Currently being worked on</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon completed">0</div>
+                        <div class="stat-info">
+                            <h3>Completed</h3>
+                            <p>Finished production</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon not-started">21</div>
+                        <div class="stat-info">
+                            <h3>Not Started</h3>
+                            <p>Pending production</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="productionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delay Reasons -->
+        <div class="widget">
+            <div class="widget-header">
+                ⚠️ Delay Reasons
+            </div>
+            <div class="delay-reasons">
+                <div class="delay-item rework">
+                    <div class="delay-info">
+                        <h4>Rework / Quality Issue</h4>
+                        <p>Production quality concerns</p>
+                    </div>
+                    <div class="delay-count">0</div>
+                </div>
+                
+                <div class="delay-item labor">
+                    <div class="delay-info">
+                        <h4>Labor Shortage</h4>
+                        <p>Insufficient workforce</p>
+                    </div>
+                    <div class="delay-count">0</div>
+                </div>
+                
+                <div class="delay-item parts">
+                    <div class="delay-info">
+                        <h4>Parts Not Available</h4>
+                        <p>Supply chain issues</p>
+                    </div>
+                    <div class="delay-count">4</div>
+                </div>
+            </div>
+            
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="delayChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Payment Status -->
+        <div class="widget">
+            <div class="widget-header">
+                💰 Payment Status
+            </div>
+            <div class="payment-summary">
+                <div class="payment-total">
+                    <div class="payment-amount">$27,019,510.98</div>
+                    <div>Total Contract Value</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="padding: 20px; background: #e3f2fd; border-radius: 10px; text-align: center;">
+                        <h3 style="color: #1976d2; margin-bottom: 10px;">Current</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #1976d2;">$27,019,510.98</div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f3e5f5; border-radius: 10px; text-align: center;">
+                        <h3 style="color: #7b1fa2; margin-bottom: 10px;">Remaining</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #7b1fa2;">$26,719,510.98</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Production Pie Chart
+        const productionCtx = document.getElementById('productionChart').getContext('2d');
+        new Chart(productionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['In Progress', 'Not Started', 'Completed'],
+                datasets: [{
+                    data: [1, 21, 0],
+                    backgroundColor: ['#FF9800', '#607D8B', '#4CAF50'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+
+        // Delay Reasons Bar Chart
+        const delayCtx = document.getElementById('delayChart').getContext('2d');
+        new Chart(delayCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Rework/Quality', 'Labor Shortage', 'Parts Not Available'],
+                datasets: [{
+                    data: [0, 0, 4],
+                    backgroundColor: ['#2196F3', '#9C27B0', '#FFC107'],
+                    borderRadius: 5,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
